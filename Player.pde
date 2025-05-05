@@ -16,7 +16,7 @@ class Player {
 
   void update() {
     if (health <= 0) return; // Stop updating if the player is dead
-    
+
     if (moveDir != 0) {
       x += moveDir * xSpeed; // Move the player horizontally
       x = constrain(x, 0, width - w); // Keep the player within the screen bounds
@@ -32,8 +32,19 @@ class Player {
 
   // Stage 2-2: Check for collisions with platforms
   void handlePlatformCollision() {
-   
-
+    boolean onPlatform = false;
+    for (Platform platform : platforms) {
+      // Check for collision with the platform
+      if (AABB(x, y + h - feetOffset, w, feetOffset, platform.x, platform.y, platform.w, platform.h) && ySpeed >= 0) {
+        y = platform.y - h + feetOffset; // Move player on top of the platform
+        ySpeed = 0; // Stop vertical movement
+        onPlatform = true;
+        break;
+      }
+    }
+    if (!onPlatform && y > height) {
+      ySpeed = 0;
+    }
   }
   // End of stage 2-2
 
@@ -45,17 +56,33 @@ class Player {
   // Stage 2-3: handle ceiling and bottom collisions
   void handleCeilingBottomCollision() {
     // When the player collides with the ceiling or bottom of the screen:
-    // keep the player at the top and subtract health by 1
-   
+    // keep the player at the top
+    if (y < 0) {
+      y = 0;
+      ySpeed = 0;
+      if (!invincible && !damaged) {
+        health -= 1;
+        damaged = true;
+        damageTimer = DAMAGE_BLINK_DURATION;
+      }
+    } else if (y >= height -1) {
+      if (!invincible && !damaged) {
+        health -= 1;
+        damaged = true;
+        damageTimer = DAMAGE_BLINK_DURATION;
+      }
+      y = 0;
+      ySpeed = 0;
+    }
 
-    // Stage 3-2: 
+    // Stage 3-2:
     // This block checks if the player is not invincible and not already in a damaged state:
     // - If both conditions are true, the player's health is reduced by 1.
     // - The player is then marked as damaged, and the damage timer is set to the predefined
     //   DAMAGE_BLINK_DURATION. This ensures the player enters a temporary "damaged" state
     //   with visual feedback (e.g., blinking effect) and avoids taking consecutive damage
     //   immediately.
-    
+
     // End of stage 3-2
   }
   // End of stage 2-3
@@ -69,14 +96,30 @@ class Player {
     //   Once the timer reaches 0, the damaged state is cleared.
     // These timers ensure that the player has temporary protection after taking damage
     // and provides visual feedback (e.g., blinking effect) during these states.
-
+    if (invincible) {
+      invincibilityTimer--;
+      if (invincibilityTimer <= 0) {
+        invincible = false;
+      }
+    }
+    if (damaged) {
+      damageTimer--;
+      if (damageTimer <= 0) {
+        damaged = false;
+      }
+    }
   }
   // End of stage 3-1
 
   // Stage 3-3: Cycle through animation frames based on timer
   void updateAnimation() {
-    
-    
+    if (moveDir != 0) {
+      if (frameCount % ANIMATION_INTERVAL == 0) {
+        animatedFrameIndex = (animatedFrameIndex + 1) % 2;
+      }
+    } else {
+      animatedFrameIndex = 0;
+    }
   }
   // End of stage 3-3
 
@@ -107,5 +150,4 @@ class Player {
       y = height;
     }
   }
-
 }
